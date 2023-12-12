@@ -1,0 +1,161 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todolist App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    #taskList {
+      list-style: none;
+      padding: 0;
+    }
+
+    #taskList li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    #taskList li button {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Todolist App</h1>
+
+<!-- Form to add a new task -->
+<form id="addTaskForm">
+  <label for="task">New Task:</label>
+  <input type="text" id="task" name="task" required>
+  <button type="submit">Add Task</button>
+</form>
+
+<!-- Display tasks -->
+<ul id="taskList"></ul>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const addTaskForm = document.getElementById('addTaskForm');
+  const taskList = document.getElementById('taskList');
+
+  addTaskForm.addEventListener('submit', handleAddTask);
+
+  taskList.addEventListener('click', (event) => {
+    if (event.target.tagName === 'BUTTON') {
+      const taskId = event.target.dataset.taskId;
+      if (event.target.classList.contains('complete')) {
+        handleCompleteTask(taskId);
+      } else if (event.target.classList.contains('delete')) {
+        handleDeleteTask(taskId);
+      }
+    }
+  });
+
+  async function handleAddTask(event) {
+    event.preventDefault();
+
+    const taskInput = document.getElementById('task');
+    const newTask = {
+      task: taskInput.value,
+    };
+
+    try {
+      const response = await fetch('http://localhost:3000/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTask),
+      });
+
+      const result = await response.json();
+
+      // Update the task list
+      displayTasks();
+    } catch (error) {
+      console.error('Error adding task:', error);
+    }
+
+    // Clear the input field
+    taskInput.value = '';
+  }
+
+  async function handleCompleteTask(taskId) {
+    try {
+      const response = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ completed: true }),
+      });
+
+      const result = await response.json();
+
+      // Update the task list
+      displayTasks();
+    } catch (error) {
+      console.error('Error completing task:', error);
+    }
+  }
+
+  async function handleDeleteTask(taskId) {
+    try {
+      const response = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+        method: 'DELETE',
+      });
+
+      // Update the task list
+      displayTasks();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  }
+
+  async function displayTasks() {
+    try {
+      const response = await fetch('http://localhost:3000/tasks');
+      const tasks = await response.json();
+
+      // Clear existing tasks
+      taskList.innerHTML = '';
+
+      // Display each task
+      tasks.forEach((task) => {
+        const listItem = document.createElement('li');
+        listItem.innerHTML = `
+          <span>${task.task}</span>
+          <button class="complete" data-task-id="${task.id}">Complete</button>
+          <button class="delete" data-task-id="${task.id}">Delete</button>
+        `;
+        taskList.appendChild(listItem);
+      });
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  }
+
+  // Initial display of tasks
+  displayTasks();
+});
+</script>
+
+</body>
+</html>
+
